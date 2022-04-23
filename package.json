@@ -8,6 +8,7 @@
     "firebase-admin": "^10.1.0",
     "lodash": "^4.17.21",
     "node-telegram-bot-api": "^0.56.0",
-    "object-hash": "^3.0.0"
+    "object-hash": "^3.0.0",
+    "ts-node": "^10.7.0"
   }
 }
