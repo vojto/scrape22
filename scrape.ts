@@ -26,6 +26,7 @@ const isAllowed = (item: Listing) => {
     "nova polhora",
     "podhradova", // sure?
     "nad jazerom",
+    "jazero",
     "sidlisku terasa",
     "stierova",
     "varsavska",
@@ -34,6 +35,24 @@ const isAllowed = (item: Listing) => {
     "wurmova",
     "meteorova",
     "miskovecka",
+    "saca",
+    "kvp",
+    "safarikova",
+    "terasa",
+    "terase",
+    "povazska",
+    "orgovanova",
+    "zelezniky",
+    "presov",
+    "tahanovce",
+    "pekinska",
+    "narodna trieda",
+    "furca",
+    "zdiarska",
+    "kezmarsk",
+    "toryska",
+    "na hore",
+    "tr. snp",
   ]
 
   const isBlacklisted = [item.title, item.description].some((str) => {
@@ -46,59 +65,70 @@ const isAllowed = (item: Listing) => {
   return !isBlacklisted
 }
 
+const SERVER_ROOT = "https://reality.bazos.sk"
+
+const createUrl = (page: number) => {
+  const offset = page * 20
+
+  const params = new URLSearchParams({
+    hlokalita: "04001",
+    humkreis: "10",
+  })
+
+  const path = offset === 0 ? `predam/byt` : `predam/byt/${offset}`
+  const base = `${SERVER_ROOT}/${path}`
+  return `${base}/?${params.toString()}`
+}
+
 const main = async () => {
   bot.update()
 
   console.log("scraping!")
 
-  const params = new URLSearchParams({
-    hlokalita: "04001",
-    humkreis: "30",
-  })
-
-  const server = "https://reality.bazos.sk"
-  const url = `${server}/?${params.toString()}`
-
-  console.log("url:", url)
-
-  const {data} = await axios.get(url)
-  const $ = cheerio.load(data)
-
   const items: Listing[] = []
 
-  $("div.inzeraty").each((idx, el) => {
-    const title = $(el).find("h2.nadpis a").text()
-    const link = $(el).find("h2.nadpis a").attr("href")
-    const description = $(el).find("div.popis").text().trim()
-    const price = $(el).find("div.inzeratycena b").text().trim()
+  for (let page = 0; page < 10; page++) {
+    const url = createUrl(page)
 
-    const item: Listing = {
-      title,
-      link: `${server}${link}`,
-      description,
-      price,
-      hash: hash({title, description, price}),
+    console.log("url:", url)
+
+    const {data} = await axios.get(url)
+    const $ = cheerio.load(data)
+
+    $("div.inzeraty").each((idx, el) => {
+      const title = $(el).find("h2.nadpis a").text()
+      const link = $(el).find("h2.nadpis a").attr("href")
+      const description = $(el).find("div.popis").text().trim()
+      const price = $(el).find("div.inzeratycena b").text().trim()
+
+      const item: Listing = {
+        title,
+        link: `${SERVER_ROOT}${link}`,
+        description,
+        price,
+        hash: hash({title, description, price}),
+      }
+      const allowed = isAllowed(item)
+
+      if (!allowed) {
+        return
+      }
+
+      items.push(item)
+    })
+
+    for (const item of items) {
+      if (await hasListing(item)) {
+        console.log("existing listing", item.title)
+        // Do nothing
+      } else {
+        console.log("notified about listing", item.title)
+        bot.send(`*${item.title}* (${item.description}) ${item.link}`)
+        await saveListing(item)
+      }
+
+      await sleep(100)
     }
-    const allowed = isAllowed(item)
-
-    if (!allowed) {
-      return
-    }
-
-    items.push(item)
-  })
-
-  for (const item of items) {
-    if (await hasListing(item)) {
-      console.log("existing listing", item.title)
-      // Do nothing
-    } else {
-      console.log("notified about listing", item.title)
-      bot.send(`*${item.title}* (${item.description}) ${item.link}`)
-      await saveListing(item)
-    }
-
-    await sleep(100)
   }
 }
 
