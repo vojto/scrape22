@@ -81,7 +81,7 @@ const createUrl = (page: number) => {
 }
 
 const main = async () => {
-  bot.update()
+  await bot.update()
 
   console.log("scraping!")
 
@@ -119,7 +119,7 @@ const main = async () => {
 
     for (const item of items) {
       if (await hasListing(item)) {
-        console.log("existing listing", item.title)
+        // console.log("existing listing", item.title)
         // Do nothing
       } else {
         console.log("notified about listing", item.title)
