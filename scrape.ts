@@ -53,7 +53,30 @@ const isAllowed = (item: Listing) => {
     "toryska",
     "na hore",
     "tr. snp",
+    "panorama",
+    "zelena stran",
   ]
+
+  const whitelist = [
+    "letna",
+    "zimna",
+    "jesenna",
+    "jarna",
+    "jilemnickeho",
+    "tehl",
+    "komenskeho",
+    "masiarska",
+    "mlynska",
+  ]
+
+  const tokens = (item.title + " " + item.description).split(/\s+/)
+
+  const isWhitelisted = tokens.some((str) => {
+    return whitelist.some((word) => {
+      const clean = cleanString(str)
+      return clean.startsWith(cleanString(word))
+    })
+  })
 
   const isBlacklisted = [item.title, item.description].some((str) => {
     return blacklist.some((word) => {
@@ -62,7 +85,7 @@ const isAllowed = (item: Listing) => {
     })
   })
 
-  return !isBlacklisted
+  return isWhitelisted && !isBlacklisted
 }
 
 const SERVER_ROOT = "https://reality.bazos.sk"

@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api"
 
 const token = "5398158258:AAGR0PLWs4ZVfNZoH0qaPUX97q-qa83NQOE"
-const chatIds = ["1624852061", "5214161280"]
+const chatIds = ["1624852061"]
 const bot = new TelegramBot(token)
 
 export const update = async () => {
