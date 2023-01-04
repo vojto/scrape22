@@ -67,6 +67,7 @@ const isAllowed = (item: Listing) => {
     "komenskeho",
     "masiarska",
     "mlynska",
+    "bastova",
   ]
 
   const tokens = (item.title + " " + item.description).split(/\s+/)
