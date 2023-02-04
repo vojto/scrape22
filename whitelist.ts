@@ -1,4 +1,4 @@
-import {cleanString} from "helpers"
+import {cleanString} from "./helpers"
 import {Listing} from "./types"
 
 export const isAllowed = (item: Listing) => {
