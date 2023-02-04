@@ -1,4 +1,5 @@
 import TelegramBot from "node-telegram-bot-api"
+import sleep from "./plugins/sleep"
 
 const token = "5398158258:AAGR0PLWs4ZVfNZoH0qaPUX97q-qa83NQOE"
 const chatIds = ["1624852061"]
@@ -30,6 +31,7 @@ export const send = async (message: string) => {
         break
       } catch (e) {
         console.log(`failed to sent, retrying ${retries}`)
+        await sleep(3000)
       }
     }
   }

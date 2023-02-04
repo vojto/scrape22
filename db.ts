@@ -10,7 +10,10 @@ admin.initializeApp({
 export const db = admin.firestore()
 
 export const saveListing = async (listing: Listing) => {
-  await db.collection("listings").doc(listing.hash).set(listing)
+  await db
+    .collection("listings")
+    .doc(listing.hash)
+    .set({...listing, createdAt: new Date()})
 }
 
 export const hasListing = async (listing: Listing) => {

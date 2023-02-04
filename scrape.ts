@@ -5,6 +5,8 @@ import sleep from "./plugins/sleep"
 import {Listing} from "types"
 import * as bot from "./bot"
 import {hasListing, saveListing} from "./db"
+import {getRealityListings} from "./reality"
+import {truncate} from "lodash"
 
 const cleanString = (str: string) => {
   return str
@@ -109,17 +111,53 @@ const createUrl = (page: number) => {
 const main = async () => {
   await bot.update()
 
-  console.log("scraping!")
+  let realityItems = await getRealityListings()
+  realityItems = realityItems.filter(isAllowed)
+  handleNewListings(realityItems)
 
-  const items: Listing[] = []
+  const bazosListings = await getBazosListings()
+  handleNewListings(bazosListings)
+}
+
+const handleNewListings = async (listings: Listing[]) => {
+  console.log("collected", listings.length, "listings")
+
+  for (const item of listings) {
+    if (await hasListing(item)) {
+      // console.log("existing listing", item.title)
+      // Do nothing
+    } else {
+      console.log("notified about listing", item.title)
+
+      const formattedPrice =
+        typeof item.price === "number"
+          ? item.price >= 1000
+            ? `${(item.price / 1000).toFixed(1)}k€`
+            : `${item.price}€`
+          : item.price?.trim()
+
+      const description = truncate(item.description, {length: 256})
+
+      let message = `*${item.title}* (${description}) ${item.link}`
+      message = formattedPrice ? `*[${formattedPrice}]* ${message}` : message
+
+      bot.send(message)
+      await saveListing(item)
+    }
+
+    await sleep(100)
+  }
+}
+
+const getBazosListings = async () => {
+  let listings: Listing[] = []
 
   for (let page = 0; page < 10; page++) {
     const url = createUrl(page)
 
-    console.log("url:", url)
-
     const {data} = await axios.get(url)
     const $ = cheerio.load(data)
+    let pageListings: Listing[] = []
 
     $("div.inzeraty").each((idx, el) => {
       const title = $(el).find("h2.nadpis a").text()
@@ -127,35 +165,25 @@ const main = async () => {
       const description = $(el).find("div.popis").text().trim()
       const price = $(el).find("div.inzeratycena b").text().trim()
 
-      const item: Listing = {
+      const listing: Listing = {
         title,
         link: `${SERVER_ROOT}${link}`,
         description,
         price,
         hash: hash({title, description, price}),
       }
-      const allowed = isAllowed(item)
 
-      if (!allowed) {
-        return
-      }
-
-      items.push(item)
+      pageListings.push(listing)
     })
 
-    for (const item of items) {
-      if (await hasListing(item)) {
-        // console.log("existing listing", item.title)
-        // Do nothing
-      } else {
-        console.log("notified about listing", item.title)
-        bot.send(`*${item.title}* (${item.description}) ${item.link}`)
-        await saveListing(item)
-      }
+    pageListings = pageListings.filter(isAllowed)
 
-      await sleep(100)
-    }
+    console.log("scraped url:", url, "whitelisted", pageListings.length)
+
+    listings = listings.concat(pageListings)
   }
+
+  return listings
 }
 
 main()
